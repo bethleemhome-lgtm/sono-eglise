@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Check-list Sono</title>
+  <meta name="description" content="Vérification du matériel sono de l'église avant chaque culte.">
+  <meta name="theme-color" content="#1F5FA8">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+<p class="offline" id="offline" hidden>Pas de connexion internet : tu peux remplir la check-list, mais l'enregistrement attendra le retour du réseau.</p>
+
+<!-- Écran de connexion (mode Supabase uniquement) -->
+<section id="view-login" class="login" hidden>
+  <h1>Check-list Sono</h1>
+  <p class="sub">Entre ton email : tu recevras un lien de connexion. Seuls les membres de l'équipe sono ajoutés par le responsable peuvent se connecter.</p>
+  <form id="login-form" class="wrap" style="gap:12px">
+    <label class="f">Email<input type="email" id="login-email" required autocomplete="email" placeholder="prenom@exemple.com"></label>
+    <button class="btn" type="submit">Recevoir le lien</button>
+  </form>
+  <p class="status" id="login-msg" aria-live="polite"></p>
+</section>
+
+<div class="wrap" id="app" hidden>
+  <header class="topbar">
+    <div>
+      <h1>Check-list Sono</h1>
+      <p class="sub">Vérification du matériel sonore avant chaque culte</p>
+    </div>
+    <div class="who">
+      <span class="mode" id="mode" hidden>MODE DÉMO</span>
+      <span id="who-email"></span>
+      <button class="linkbtn" id="btn-logout" type="button" hidden>Déconnexion</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-check" aria-selected="true">Vérification</button>
+    <button class="tab" role="tab" id="tab-pannes" aria-selected="false">Pannes <span class="badge" id="badge" hidden></span></button>
+    <button class="tab" role="tab" id="tab-hist" aria-selected="false">Historique</button>
+    <button class="tab" role="tab" id="tab-regl" aria-selected="false">Réglages</button>
+    <button class="tab" role="tab" id="tab-info" aria-selected="false">Infos &amp; formation</button>
+  </nav>
+
+  <!-- Vérification -->
+  <section id="view-check" class="wrap" style="gap:18px">
+    <div class="meta">
+      <label class="f">Date du culte<input type="date" id="f-date"></label>
+      <label class="f">Culte<select id="f-type"></select></label>
+      <label class="f">Technicien<input type="text" id="f-tech" placeholder="Nom du responsable" autocomplete="name"></label>
+    </div>
+    <div class="meter" aria-live="polite">
+      <div class="meter-row" id="meter-txt"></div>
+      <div class="bar" id="meter-bar"></div>
+    </div>
+    <div id="groups" class="wrap" style="gap:14px"></div>
+    <label class="f">Remarque générale<textarea id="f-note" rows="2" placeholder="Ex. : prévoir des piles AA pour dimanche prochain"></textarea></label>
+    <div class="actions">
+      <button class="btn" id="btn-save" type="button">Enregistrer</button>
+      <button class="btn ghost" id="btn-copy" type="button">Partager le rapport</button>
+      <button class="btn ghost" id="btn-reset" type="button">Nouvelle vérification</button>
+    </div>
+    <p class="status" id="status" aria-live="polite"></p>
+    <pre class="report" id="report" hidden></pre>
+  </section>
+
+  <!-- Pannes -->
+  <section id="view-pannes" class="hist" hidden>
+    <p class="sub">Chaque équipement marqué « Défaillant » ou « Absent » dans une vérification enregistrée arrive ici. Il y reste jusqu'à ce qu'on le marque réparé.</p>
+    <h2>À réparer</h2>
+    <div id="pannes-open" class="hist"><p class="empty">Chargement…</p></div>
+    <details id="pannes-done-box" hidden><summary>Réparés <span id="done-count"></span></summary><div id="pannes-done" class="hist" style="margin-top:10px"></div></details>
+  </section>
+
+  <!-- Historique -->
+  <section id="view-hist" class="hist" hidden>
+    <p class="sub">Les vérifications enregistrées, de la plus récente à la plus ancienne.</p>
+    <div id="hist-list" class="hist"><p class="empty">Chargement…</p></div>
+  </section>
+
+  <!-- Réglages -->
+  <section id="view-regl" class="info" hidden>
+    <div class="block">
+      <h2>Réglages de référence – EFX8</h2>
+      <p>Note ici les positions qui donnent un bon son. Les boutons se lisent comme une horloge : tout à gauche = 7 h, milieu = 12 h, tout à droite = 17 h. Le technicien suivant part de ces réglages puis ajuste.</p>
+      <p class="sub" style="font-size:.85rem">Sur téléphone, fais glisser le tableau vers la gauche pour voir toutes les colonnes.</p>
+      <div class="tbl"><table class="regl">
+        <thead><tr><th>Tranche</th><th>Source</th><th>Gain</th><th>AUX1</th><th>FX</th><th>Fader</th><th>Note</th></tr></thead>
+        <tbody id="regl-body"></tbody>
+      </table></div>
+      <div class="meta">
+        <label class="f">Programme effet (PROGRAM SELECT)<input type="text" id="rg-prog" placeholder="ex. 6 – L.PLT (Bank A)"></label>
+        <label class="f">Faders MIX L/R<input type="text" id="rg-mix" placeholder="ex. 0"></label>
+        <label class="f">Level AUX1 OUT<input type="text" id="rg-aux" placeholder="ex. 13 h"></label>
+      </div>
+      <div class="actions"><button class="btn" id="btn-regl" type="button">Enregistrer les réglages</button></div>
+      <p class="status" id="regl-status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Infos & formation (contenu dans js/views/infos.js) -->
+  <section id="view-info" class="info" hidden></section>
+</div>
+</body>
+</html>
