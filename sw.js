@@ -2,7 +2,7 @@
 // même avec une connexion faible ou absente.
 // ⚠️ Change le numéro de VERSION à chaque mise à jour de l'app,
 // sinon les téléphones garderont l'ancienne version.
-const VERSION = "sono-v1";
+const VERSION = "sono-v2";
 
 const FILES = [
   "./",
